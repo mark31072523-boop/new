@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microlearning: จิตวิญญาณความเป็นครู</title>
+    
+    <!-- เปลี่ยนมาใช้ CDNJS เพื่อความเสถียรสูงสุด -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ฟอนต์ Prompt: ทันสมัย โมเดิร์น อ่านง่าย (ยอดนิยมในไทย) -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ตั้งค่าฟอนต์หลักเป็น Prompt */
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            background-color: #FDFBF7;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Animation */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.8s ease-out forwards;
+        }
+        
+        html { scroll-behavior: smooth; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- แสดงระหว่างรอโหลด Script -->
+        <div class="flex items-center justify-center h-screen text-slate-400 font-light animate-pulse">
+            กำลังเตรียมห้องเรียน...
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ชุดไอคอน (Embedded SVG) เพื่อความชัวร์ 100% ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        // Icons Components
+        const BookOpen = (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>;
+        const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
+        const ChevronDown = (p) => <IconBase {...p}><path d="m6 9 6 6 6-6"/></IconBase>;
+        const Menu = (p) => <IconBase {...p}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></IconBase>;
+        const X = (p) => <IconBase {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+        const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const GraduationCap = (p) => <IconBase {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>;
+        const Star = (p) => <IconBase {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>;
+        const User = (p) => <IconBase {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase>;
+        const Heart = (p) => <IconBase {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconBase>;
+        const Shield = (p) => <IconBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></IconBase>;
+        const Lightbulb = (p) => <IconBase {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></IconBase>;
+        const ArrowRight = (p) => <IconBase {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></IconBase>;
+        const Quote = (p) => <IconBase {...p}><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></IconBase>;
+        const Leaf = (p) => <IconBase {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></IconBase>;
+        const Coffee = (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></IconBase>;
+
+        const App = () => {
+            const [scrollProgress, setScrollProgress] = useState(0);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeSection, setActiveSection] = useState('intro');
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    const totalScroll = document.documentElement.scrollTop;
+                    const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    const scroll = totalScroll / windowHeight;
+                    setScrollProgress(Number(scroll));
+
+                    const sections = ['intro', 'meaning-teacher', 'meaning-spirit', 'components', 'importance', 'summary'];
+                    for (const section of sections) {
+                        const element = document.getElementById(section);
+                        if (element) {
+                            const rect = element.getBoundingClientRect();
+                            if (rect.top >= 0 && rect.top <= 500) {
+                                setActiveSection(section);
+                            }
+                        }
+                    }
+                }
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const scrollToSection = (id) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                    setIsMenuOpen(false);
+                    setActiveSection(id);
+                }
+            };
+
+            return (
+                <div className="min-h-screen text-stone-800 selection:bg-amber-200 selection:text-amber-900 pb-20">
+                    
+                    {/* Progress Bar */}
+                    <div className="fixed top-0 left-0 w-full h-1.5 z-50 bg-stone-200">
+                        <div className="h-full bg-amber-500 transition-all duration-300 ease-out" style={{ width: `${scrollProgress * 100}%` }}></div>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="sticky top-0 z-40 bg-[#FDFBF7]/95 backdrop-blur-md border-b border-stone-200 shadow-sm transition-all duration-300">
+                        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-full text-emerald-700 shadow-sm">
+                                    <Leaf size={20} />
+                                </div>
+                                <div>
+                                    <h1 className="text-sm font-bold text-stone-800 leading-tight">Microlearning</h1>
+                                    <p className="text-xs text-stone-500 font-medium">จิตวิญญาณความเป็นครู</p>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-stone-600">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 rounded-full border border-amber-100 text-amber-800">
+                                    <Clock size={14} /> 
+                                    <span>5–10 นาที</span>
+                                </div>
+                                <button onClick={() => scrollToSection('intro')} className={`hover:text-emerald-700 transition-colors ${activeSection === 'intro' ? 'text-emerald-700 font-bold' : ''}`}>บทนำ</button>
+                                <button onClick={() => scrollToSection('meaning-teacher')} className={`hover:text-emerald-700 transition-colors ${activeSection === 'meaning-teacher' ? 'text-emerald-700 font-bold' : ''}`}>ความหมาย</button>
+                                <button onClick={() => scrollToSection('components')} className={`hover:text-emerald-700 transition-colors ${activeSection === 'components' ? 'text-emerald-700 font-bold' : ''}`}>องค์ประกอบ</button>
+                            </div>
+
+                            <button className="md:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                            </button>
+                        </div>
+
+                        {isMenuOpen && (
+                            <div className="md:hidden absolute top-16 left-0 w-full bg-[#FDFBF7] border-b border-stone-200 shadow-lg py-4 px-4 flex flex-col gap-2 z-50 animate-fade-in-up">
+                                <div className="text-xs text-stone-400 mb-2 font-bold uppercase tracking-wider">สารบัญเนื้อหา</div>
+                                <button onClick={() => scrollToSection('intro')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1 บทนำ</button>
+                                <button onClick={() => scrollToSection('meaning-teacher')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1.1 ความหมายของคำว่า “ครู”</button>
+                                <button onClick={() => scrollToSection('meaning-spirit')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1.2 ความหมายของจิตวิญญาณความเป็นครู</button>
+                                <button onClick={() => scrollToSection('components')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1.3 องค์ประกอบของจิตวิญญาณความเป็นครู</button>
+                                <button onClick={() => scrollToSection('importance')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1.4 ความสำคัญของจิตวิญญาณความเป็นครู</button>
+                                <button onClick={() => scrollToSection('summary')} className="text-left px-4 py-3 rounded-lg hover:bg-amber-50 text-stone-700 font-medium transition-colors">2.1 สรุปท้ายบท</button>
+                            </div>
+                        )}
+                    </nav>
+
+                    <main>
+                        {/* HERO SECTION */}
+                        <header className="relative w-full h-[85vh] flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 z-0">
+                                <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=2000" alt="Warm classroom" className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-[20s]" 
+                                onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #10b981 100%)'; }} />
+                                <div className="absolute inset-0 bg-stone-900/40 mix-blend-multiply"></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-stone-900/20 to-transparent"></div>
+                            </div>
+
+                            <div className="relative z-10 text-center px-4 max-w-4xl mx-auto animate-fade-in-up">
+                                <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/90 text-white text-sm font-semibold mb-6 shadow-lg backdrop-blur-sm tracking-wide">
+                                    Microlearning Unit • ระดับปริญญาตรี
+                                </span>
+                                <h1 className="text-4xl md:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-xl tracking-tight">
+                                    บทเรียนที่ 2.1 <br/>
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-400">จิตวิญญาณความเป็นครู</span>
+                                </h1>
+                                <p className="text-lg md:text-2xl text-stone-100 font-light max-w-2xl mx-auto leading-relaxed mb-12 text-shadow opacity-90">
+                                    แนวคิดและความหมายของพลังภายในที่ขับเคลื่อนวิชาชีพครู
+                                </p>
+                                
+                                <button onClick={() => scrollToSection('intro')} className="group bg-white text-stone-900 px-8 py-4 rounded-full font-bold shadow-2xl hover:bg-amber-50 hover:scale-105 transition-all flex items-center gap-2 mx-auto">
+                                    เริ่มเรียนรู้
+                                    <ChevronDown className="group-hover:translate-y-1 transition-transform" size={20} />
+                                </button>
+                            </div>
+                        </header>
+
+                        {/* 2.1 บทนำ */}
+                        <section id="intro" className="py-24 px-4 md:px-8 max-w-6xl mx-auto scroll-mt-16">
+                            <div className="grid md:grid-cols-2 gap-16 items-center">
+                                <div className="order-2 md:order-1 space-y-8">
+                                    <div className="flex items-center gap-4">
+                                        <span className="flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 font-bold text-xl shadow-sm rotate-3">2.1</span>
+                                        <h2 className="text-4xl font-bold text-stone-800 tracking-tight">บทนำ</h2>
+                                    </div>
+                                    
+                                    <div className="prose prose-lg prose-stone text-stone-600 leading-loose">
+                                        <p>
+                                            วิชาชีพครูเป็นวิชาชีพที่มีบทบาทสำคัญต่อการพัฒนามนุษย์และสังคม เนื่องจากครูเป็นผู้มีหน้าที่ถ่ายทอดความรู้ พัฒนาทักษะ และหล่อหลอมคุณลักษณะอันพึงประสงค์ให้แก่ผู้เรียน การปฏิบัติหน้าที่ครูจึงมิได้อาศัยเพียงความรู้ความสามารถทางวิชาการเท่านั้น แต่ยังต้องอาศัยคุณลักษณะภายในจิตใจที่สะท้อนถึงความเป็นครูอย่างแท้จริง ซึ่งเรียกว่า “จิตวิญญาณความเป็นครู”
+                                        </p>
+                                        <div className="p-8 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-2xl shadow-sm my-8">
+                                            <p className="m-0 text-emerald-900 font-medium text-lg">
+                                                จิตวิญญาณความเป็นครูเป็นแนวคิดที่ได้รับความสนใจอย่างกว้างขวางในวงการศึกษา เนื่องจากเป็นปัจจัยสำคัญที่ส่งผลต่อคุณภาพการจัดการเรียนการสอน ความสัมพันธ์ระหว่างครูกับผู้เรียน รวมถึงภาพลักษณ์ของวิชาชีพครูในสังคม บทเรียนนี้จึงมุ่งอธิบายแนวคิด ความหมาย และสาระสำคัญของจิตวิญญาณความเป็นครู เพื่อเป็นพื้นฐานในการเรียนรู้บทถัดไป
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="order-1 md:order-2 relative group">
+                                    <div className="absolute -inset-4 bg-gradient-to-tr from-amber-200 to-emerald-200 rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+                                    <img src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=800" alt="Teacher Illustration" className="relative w-full h-auto rounded-[2rem] shadow-2xl rotate-2 group-hover:rotate-0 transition-transform duration-500 object-cover aspect-[4/3]" />
+                                    <div className="absolute -bottom-8 -right-4 bg-white p-5 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce" style={{animationDuration: '3s'}}>
+                                        <div className="bg-rose-100 p-2 rounded-full text-rose-500"><Heart fill="currentColor" size={24} /></div>
+                                        <span className="font-bold text-stone-700">ใจรักความเป็นครู</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 2.1.1 ความหมายของคำว่า “ครู” */}
+                        <section id="meaning-teacher" className="py-24 bg-stone-100/50 scroll-mt-16">
+                            <div className="max-w-6xl mx-auto px-4 md:px-8">
+                                <div className="text-center mb-20">
+                                    <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs mb-3 block">DEFINITION</span>
+                                    <h2 className="text-3xl md:text-5xl font-bold text-stone-800 mb-6">2.1.1 ความหมายของคำว่า “ครู”</h2>
+                                    <div className="w-20 h-1.5 bg-amber-400 mx-auto rounded-full"></div>
+                                </div>
+
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    <div className="bg-white rounded-3xl p-8 shadow-sm hover:shadow-2xl transition-all duration-300 border border-stone-100 group hover:-translate-y-2">
+                                        <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform shadow-inner">
+                                            <BookOpen size={28} />
+                                        </div>
+                                        <h3 className="font-bold text-xl mb-4 text-stone-800">พจนานุกรมฉบับราชบัณฑิตยสถาน</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            พจนานุกรมฉบับราชบัณฑิตยสถาน พ.ศ. 2554 ให้ความหมายของคำว่า “ครู” ว่า หมายถึง ผู้สั่งสอนศิษย์หรือผู้ถ่ายทอดความรู้ให้แก่ศิษย์ ในบริบทปัจจุบัน คำว่า ครู มิได้หมายถึงเพียงบุคคลผู้สอนหนังสือเท่านั้น แต่ยังหมายถึงผู้ประกอบวิชาชีพครูซึ่งมีบทบาทสำคัญต่อการพัฒนาผู้เรียนทั้งด้านสติปัญญา คุณธรรม และการดำรงชีวิตในสังคม
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white rounded-3xl p-8 shadow-sm hover:shadow-2xl transition-all duration-300 border border-stone-100 group hover:-translate-y-2 relative md:-top-12 z-10">
+                                        <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform shadow-inner">
+                                            <Lightbulb size={28} />
+                                        </div>
+                                        <h3 className="font-bold text-xl mb-4 text-stone-800">รากศัพท์ทางวัฒนธรรม</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            ในเชิงแนวคิดทางวัฒนธรรม คำว่า “ครู” มีรากศัพท์มาจากภาษาบาลีและสันสกฤต ซึ่งสื่อถึงความหมายของความหนักแน่น ความน่าเคารพ และการเป็นผู้ชี้นำทางปัญญา แนวคิดดังกล่าวสะท้อนให้เห็นว่าครูในอดีตได้รับการยกย่องให้เป็นผู้เปิดประตูทางจิตใจและวิญญาณของศิษย์ ช่วยให้ศิษย์สามารถแยกแยะความดีและความชั่ว และดำรงชีวิตอยู่ในแนวทางที่ถูกต้อง
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white rounded-3xl p-8 shadow-sm hover:shadow-2xl transition-all duration-300 border border-stone-100 group hover:-translate-y-2">
+                                        <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform shadow-inner">
+                                            <User size={28} />
+                                        </div>
+                                        <h3 className="font-bold text-xl mb-4 text-stone-800">ทัศนะนักวิชาการ</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            นักวิชาการหลายท่านเห็นพ้องกันว่า ครูเป็นบุคลากรวิชาชีพที่ทำหน้าที่ถ่ายทอดความรู้ ส่งเสริมการเรียนรู้ และอบรมบ่มนิสัยของผู้เรียน โดยมุ่งหวังให้ผู้เรียนเป็นบุคคลที่มีความรู้ ความสามารถ และคุณธรรมตามที่สังคมพึงประสงค์ ดังนั้น ความเป็นครูจึงมิได้จำกัดอยู่เพียงบทบาทการสอนในห้องเรียน แต่ครอบคลุมถึงการเป็นแบบอย่างที่ดีและผู้นำทางคุณธรรมของสังคมด้วย
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 2.1.2 ความหมายของจิตวิญญาณความเป็นครู */}
+                        <section id="meaning-spirit" className="relative py-32 bg-stone-900 scroll-mt-16 overflow-hidden">
+                            <div className="absolute inset-0 opacity-40">
+                                <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=2000" alt="Background" className="w-full h-full object-cover" />
+                            </div>
+                            
+                            <div className="max-w-5xl mx-auto px-4 relative z-10">
+                                <div className="glass-card rounded-[2.5rem] p-8 md:p-16 shadow-2xl border-none">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-6 mb-10 border-b border-stone-200/50 pb-8">
+                                        <div className="p-4 bg-rose-100 rounded-2xl text-rose-600 w-fit shadow-md">
+                                            <Heart size={36} fill="currentColor" className="opacity-90" />
+                                        </div>
+                                        <h2 className="text-3xl md:text-4xl font-bold text-stone-800">2.1.2 ความหมายของจิตวิญญาณความเป็นครู</h2>
+                                    </div>
+
+                                    <div className="space-y-10 text-lg">
+                                        <div className="flex gap-6 items-start">
+                                            <Quote className="text-amber-400 flex-shrink-0 transform rotate-180 mt-1" size={32} />
+                                            <p className="text-stone-700 leading-loose font-light">
+                                                คำว่า “จิตวิญญาณ” ในทางจิตวิทยาและการศึกษา มักถูกอธิบายว่าเป็นพลังภายในที่ขับเคลื่อนความคิด ความรู้สึก และพฤติกรรมของบุคคล นักจิตวิทยาได้อธิบายว่าจิตวิญญาณเกี่ยวข้องกับการแสวงหาความหมายของชีวิต ความภาคภูมิใจในตนเอง และการยอมรับคุณค่าในบทบาทหน้าที่ของตน
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-rose-50 to-orange-50 p-8 rounded-3xl border border-rose-100 shadow-inner">
+                                            <p className="text-stone-800 font-semibold leading-relaxed text-xl">
+                                                เมื่อนำคำว่า “จิตวิญญาณ” มารวมกับคำว่า “ครู” สามารถสรุปได้ว่า จิตวิญญาณความเป็นครู หมายถึง จิตสำนึกภายในที่ตั้งอยู่บนพื้นฐานของคุณธรรมและจริยธรรม ซึ่งส่งผลให้ครูปฏิบัติหน้าที่ด้วยความรัก ความเมตตา ความเสียสละ และความรับผิดชอบต่อผู้เรียนและวิชาชีพ
+                                            </p>
+                                        </div>
+
+                                        <p className="text-stone-700 leading-loose">
+                                            นักวิชาการได้ให้ความหมายของจิตวิญญาณความเป็นครูในลักษณะที่สอดคล้องกัน โดยเห็นว่าจิตวิญญาณความเป็นครูเป็นคุณลักษณะทั้งด้านจิตใจและพฤติกรรมที่สะท้อนถึงการเป็นครูที่ดี เช่น ความรักในอาชีพ ความศรัทธาในวิชาชีพ ความรับผิดชอบ ความยุติธรรม ความอดทน และการเป็นแบบอย่างที่ดีแก่ผู้เรียน เพื่อนร่วมงาน และสังคม
+                                        </p>
+
+                                        <div className="flex items-center gap-4 text-stone-600 bg-white/60 p-6 rounded-2xl backdrop-blur-sm">
+                                            <div className="bg-amber-100 p-2 rounded-full"><ArrowRight size={20} className="text-amber-600" /></div>
+                                            <p className="leading-relaxed font-medium">
+                                                กล่าวโดยสรุป จิตวิญญาณความเป็นครูมิได้เป็นเพียงแนวคิดเชิงนามธรรม แต่เป็นพลังภายในที่แสดงออกผ่านการกระทำอย่างเป็นรูปธรรมในการปฏิบัติหน้าที่ครู ทั้งในและนอกห้องเรียน
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 2.1.3 องค์ประกอบ */}
+                        <section id="components" className="py-24 max-w-6xl mx-auto px-4 md:px-8 scroll-mt-16">
+                            <div className="text-center mb-20">
+                                <h2 className="text-3xl md:text-5xl font-bold text-stone-800 mb-8">2.1.3 องค์ประกอบสำคัญ</h2>
+                                <p className="text-xl text-stone-500 max-w-3xl mx-auto font-light leading-relaxed">
+                                    จากการศึกษาเอกสารและงานวิจัยที่เกี่ยวข้อง สามารถสรุปองค์ประกอบสำคัญของจิตวิญญาณความเป็นครูได้หลายประการ โดยองค์ประกอบเหล่านี้มีความเชื่อมโยงและเกื้อหนุนซึ่งกันและกัน ได้แก่
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="bg-[#FFFBEB] rounded-3xl p-8 border-2 border-[#FCD34D]/30 hover:shadow-xl hover:border-[#FCD34D] transition-all flex gap-6 items-start group">
+                                    <div className="bg-amber-400 p-4 rounded-2xl text-white shadow-lg shadow-amber-200 flex-shrink-0 group-hover:scale-110 transition-transform">
+                                        <User size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-stone-800 mb-3 group-hover:text-amber-600 transition-colors">ด้านคุณลักษณะส่วนบุคคลและคุณธรรมจริยธรรม</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            เช่น ความเมตตา ความซื่อสัตย์ ความยุติธรรม ความอดทน และความเสียสละ ซึ่งเป็นพื้นฐานสำคัญของการเป็นครูที่ดี
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#ECFDF5] rounded-3xl p-8 border-2 border-[#6EE7B7]/30 hover:shadow-xl hover:border-[#6EE7B7] transition-all flex gap-6 items-start group">
+                                    <div className="bg-emerald-400 p-4 rounded-2xl text-white shadow-lg shadow-emerald-200 flex-shrink-0 group-hover:scale-110 transition-transform">
+                                        <Shield size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-stone-800 mb-3 group-hover:text-emerald-600 transition-colors">ด้านการปฏิบัติตามจรรยาบรรณวิชาชีพ</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            ครูที่มีจิตวิญญาณความเป็นครูจะยึดมั่นในจรรยาบรรณวิชาชีพ ปฏิบัติตนอย่างเหมาะสม และรักษาเกียรติของวิชาชีพครู
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#FEF2F2] rounded-3xl p-8 border-2 border-[#FCA5A5]/30 hover:shadow-xl hover:border-[#FCA5A5] transition-all flex gap-6 items-start group">
+                                    <div className="bg-rose-400 p-4 rounded-2xl text-white shadow-lg shadow-rose-200 flex-shrink-0 group-hover:scale-110 transition-transform">
+                                        <Heart size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-stone-800 mb-3 group-hover:text-rose-600 transition-colors">ด้านความรักและศรัทธาในวิชาชีพ</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            ความรักในอาชีพครูเป็นแรงจูงใจสำคัญที่ทำให้ครูปฏิบัติหน้าที่ด้วยความมุ่งมั่นและเสียสละ
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#EFF6FF] rounded-3xl p-8 border-2 border-[#93C5FD]/30 hover:shadow-xl hover:border-[#93C5FD] transition-all flex gap-6 items-start group">
+                                    <div className="bg-blue-400 p-4 rounded-2xl text-white shadow-lg shadow-blue-200 flex-shrink-0 group-hover:scale-110 transition-transform">
+                                        <GraduationCap size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-stone-800 mb-3 group-hover:text-blue-600 transition-colors">ด้านความเชี่ยวชาญในการสอนและการพัฒนาตนเอง</h3>
+                                        <p className="text-stone-600 leading-relaxed font-light">
+                                            ครูต้องแสวงหาความรู้ใหม่ ๆ พัฒนาทักษะการสอน และปรับปรุงตนเองอย่างต่อเนื่องเพื่อให้ทันต่อการเปลี่ยนแปลงของสังคม
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-16 text-center">
+                                <span className="inline-block bg-stone-800 text-white px-8 py-4 rounded-full text-sm font-medium shadow-xl hover:bg-stone-700 transition-colors cursor-default">
+                                    สะท้อนให้เห็นว่าจิตวิญญาณความเป็นครูเป็นคุณลักษณะเชิงองค์รวม
+                                </span>
+                            </div>
+                        </section>
+
+                        {/* 2.1.4 ความสำคัญ */}
+                        <section id="importance" className="py-24 bg-white">
+                            <div className="max-w-6xl mx-auto px-4 md:px-8">
+                                <div className="grid md:grid-cols-2 gap-20 items-center">
+                                    <div className="relative group">
+                                        <div className="absolute top-6 left-6 w-full h-full border-2 border-stone-200 rounded-[2rem] z-0 transition-transform group-hover:top-4 group-hover:left-4"></div>
+                                        <img src="https://images.unsplash.com/photo-1577896334614-20190c6f1659?auto=format&fit=crop&q=80&w=800" alt="Inspiration" className="relative z-10 w-full h-auto rounded-[2rem] shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-700 object-cover aspect-square" />
+                                    </div>
+
+                                    <div className="space-y-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-2 h-12 bg-amber-400 rounded-full"></div>
+                                            <h2 className="text-3xl font-bold text-stone-800">2.1.4 ความสำคัญของจิตวิญญาณความเป็นครู</h2>
+                                        </div>
+
+                                        <div className="bg-emerald-50/50 p-8 rounded-3xl border border-emerald-100 hover:shadow-lg transition-shadow">
+                                            <div className="flex gap-6">
+                                                <Star className="text-emerald-500 flex-shrink-0 mt-1" size={32} />
+                                                <p className="text-stone-700 leading-loose text-lg font-light">
+                                                    จิตวิญญาณความเป็นครูมีความสำคัญต่อการพัฒนาผู้เรียน วิชาชีพครู และสังคมโดยรวม ครูที่มีจิตวิญญาณความเป็นครูจะสามารถสร้างบรรยากาศการเรียนรู้ที่เอื้อต่อการพัฒนาศักยภาพของผู้เรียน ส่งเสริมความสัมพันธ์อันดีระหว่างครูกับศิษย์ และเป็นแบบอย่างที่ดีในการดำรงชีวิต
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50/50 p-8 rounded-3xl border border-amber-100 hover:shadow-lg transition-shadow">
+                                            <div className="flex gap-6">
+                                                <Shield className="text-amber-500 flex-shrink-0 mt-1" size={32} />
+                                                <p className="text-stone-700 leading-loose text-lg font-light">
+                                                    นอกจากนี้ จิตวิญญาณความเป็นครูยังช่วยยกระดับมาตรฐานวิชาชีพครู ทำให้วิชาชีพครูได้รับความเชื่อถือและการยอมรับจากสังคม หากขาดจิตวิญญาณดังกล่าว อาจนำไปสู่การปฏิบัติหน้าที่อย่างขาดความรับผิดชอบ หรือพฤติกรรมที่ไม่เหมาะสมกับวิชาชีพ
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 2.1 สรุป */}
+                        <section id="summary" className="py-32 bg-[#2C3E50] text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-20 opacity-[0.03]">
+                                <Coffee size={400} />
+                            </div>
+
+                            <div className="max-w-4xl mx-auto px-4 relative z-10 text-center space-y-10">
+                                <div className="inline-flex items-center justify-center p-6 bg-white/5 rounded-full backdrop-blur-sm mb-6 shadow-2xl">
+                                    <CheckCircle size={48} className="text-emerald-400" />
+                                </div>
+                                
+                                <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tight">2.1 สรุปท้ายบท</h2>
+                                
+                                <p className="text-2xl md:text-3xl font-light leading-relaxed text-stone-200">
+                                    "จิตวิญญาณความเป็นครูเป็นหัวใจสำคัญของวิชาชีพครู เป็นพลังภายในที่ขับเคลื่อนให้ครูปฏิบัติหน้าที่ด้วยคุณธรรม จริยธรรม และความรับผิดชอบต่อผู้เรียนและสังคม"
+                                </p>
+
+                                <div className="w-32 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent mx-auto opacity-70"></div>
+
+                                <p className="text-lg text-stone-400 font-light">
+                                    การทำความเข้าใจแนวคิดและความหมายของจิตวิญญาณความเป็นครูจึงเป็นพื้นฐานสำคัญสำหรับการเรียนรู้บทถัดไป ซึ่งจะกล่าวถึงความสัมพันธ์ระหว่างจิตวิญญาณความเป็นครูกับจรรยาบรรณวิชาชีพ
+                                </p>
+
+                                <div className="pt-16">
+                                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-4 rounded-full font-bold transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl text-lg">
+                                        กลับสู่ด้านบน <ArrowRight size={24} className="-rotate-90" />
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-[#1a252f] border-t border-stone-800 py-16 text-center">
+                        <div className="flex justify-center items-center gap-3 mb-6 text-stone-400">
+                            <Leaf size={20} />
+                            <span className="text-sm tracking-[0.2em] uppercase font-bold">Microlearning Website</span>
+                        </div>
+                        <p className="text-stone-500 text-sm font-light">รายวิชา: จิตวิญญาณความเป็นครู • สำหรับผู้เรียนระดับปริญญาตรี</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
